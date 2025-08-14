@@ -79,32 +79,32 @@ def check_card_stripe(card_data):
             error_code = result["error"].get("code", "")
             error_message = result["error"].get("message", "")
             
-            # Categorize errors - CVC incorrect now marked as declined
+            # Focus on approval status for transactions
             if "incorrect_cvc" in error_code:
-                return {"status": "declined", "message": "CVC is incorrect", "response": "CVC INCORRECT ❌"}
+                return {"status": "declined", "message": "CVC is incorrect - transaction would be declined", "response": "DECLINED ❌ - Bad CVC"}
             elif "incorrect_zip" in error_code:
-                return {"status": "declined", "message": "ZIP code is incorrect", "response": "ZIP INCORRECT ❌"}
+                return {"status": "declined", "message": "ZIP code is incorrect - transaction would be declined", "response": "DECLINED ❌ - Bad ZIP"}
             elif "card_declined" in error_code:
                 if "insufficient_funds" in error_message.lower():
-                    return {"status": "approved", "message": "Insufficient funds - card is valid but no money", "response": "CCN ✅ - INSUFFICIENT FUNDS"}
+                    return {"status": "approved", "message": "Card approved but insufficient funds", "response": "APPROVED ✅ - No Funds"}
                 elif "generic_decline" in error_message.lower():
-                    return {"status": "approved", "message": "Generic decline - card is valid but bank declined", "response": "CCN ✅ - GENERIC DECLINE"}
+                    return {"status": "declined", "message": "Generic decline - bank rejected transaction", "response": "DECLINED ❌ - Bank Reject"}
                 elif "do_not_honor" in error_message.lower():
-                    return {"status": "approved", "message": "Do not honor - card is valid but bank blocked", "response": "CCN ✅ - DO NOT HONOR"}
+                    return {"status": "declined", "message": "Do not honor - bank blocked transaction", "response": "DECLINED ❌ - Bank Block"}
                 elif "transaction_not_allowed" in error_message.lower():
-                    return {"status": "approved", "message": "Transaction not allowed - card is valid but restricted", "response": "CCN ✅ - NOT ALLOWED"}
+                    return {"status": "declined", "message": "Transaction not allowed - card restricted", "response": "DECLINED ❌ - Restricted"}
                 else:
-                    return {"status": "declined", "message": error_message, "response": "DECLINED ❌"}
+                    return {"status": "declined", "message": "Transaction declined by bank", "response": "DECLINED ❌"}
             elif "expired_card" in error_code:
-                return {"status": "declined", "message": "Card expired", "response": "EXPIRED ❌"}
+                return {"status": "declined", "message": "Card expired - transaction would be declined", "response": "DECLINED ❌ - Expired"}
             elif "invalid" in error_code:
-                return {"status": "declined", "message": "Invalid card", "response": "INVALID ❌"}
+                return {"status": "declined", "message": "Invalid card details - transaction would fail", "response": "DECLINED ❌ - Invalid"}
             else:
-                return {"status": "declined", "message": error_message, "response": "DECLINED ❌"}
+                return {"status": "declined", "message": "Transaction would be declined", "response": "DECLINED ❌"}
         
-        # If no error, card details are valid
+        # If no error, card would be approved for transactions
         if result.get("id"):
-            return {"status": "approved", "message": "Card validated successfully - all details correct", "response": "LIVE ✅ - FULLY VALID"}
+            return {"status": "approved", "message": "Card approved - transaction would succeed", "response": "APPROVED ✅ - Ready"}
         
         return {"status": "error", "message": "Unknown response from Stripe"}
         
@@ -144,9 +144,10 @@ def get_bin_info_fast(bin_number):
 @app.route('/')
 def home():
     return jsonify({
-        "service": "⚡ Auto Stripe Checker ⚡",
+        "service": "⚡ Card Approval Checker ⚡",
         "status": "🟢 ONLINE",
-        "version": "v2.0"
+        "purpose": "Check if cards will be APPROVED or DECLINED for transactions",
+        "version": "v2.1"
     })
 
 @app.route('/check/<cc>')
