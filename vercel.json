@@ -1,13 +1,7 @@
 {
   "functions": {
-    "api/check-card.py": {
-      "runtime": "python3.9"
+    "api/*.py": {
+      "runtime": "@vercel/python"
     }
-  },
-  "routes": [
-    {
-      "src": "/api/check-card",
-      "dest": "/api/check-card.py"
-    }
-  ]
+  }
 }
