@@ -53,12 +53,10 @@ async def check_single_card(cc_details):
     corr = generate_random_code()
     sess = generate_random_code()
 
-    proxy_url = "Ur Rotational Proxy Here"
-    transport = httpx.AsyncHTTPTransport(proxy=proxy_url)
     timeout = httpx.Timeout(30.0, connect=10.0)
 
     try:
-        async with httpx.AsyncClient(transport=transport, timeout=timeout) as session:
+        async with httpx.AsyncClient(timeout=timeout) as session:
             # Step 1: Get product page
             headers = {
                 'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
