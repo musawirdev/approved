@@ -196,14 +196,39 @@ async def check_single_card(cc_details):
 
             result = response.json()
             
+            # Debug: Return the full response for inspection
+            if response.status_code != 200:
+                return {"status": "error", "message": f"HTTP {response.status_code}", "card": ccx, "debug": result}
+            
             # Check if payment was successful
             if "data" in result and "submitForCompletion" in result["data"]:
-                if "receipt" in result["data"]["submitForCompletion"]:
-                    return {"status": "approved", "message": "Card approved", "card": ccx}
-                elif "errors" in result["data"]["submitForCompletion"]:
-                    return {"status": "declined", "message": "Card declined", "card": ccx}
+                submission = result["data"]["submitForCompletion"]
+                
+                if "receipt" in submission:
+                    receipt = submission["receipt"]
+                    return {
+                        "status": "approved", 
+                        "message": "Card approved - MONEY CHARGED", 
+                        "card": ccx,
+                        "receipt_id": receipt.get("id", "unknown"),
+                        "debug": submission
+                    }
+                elif "errors" in submission:
+                    return {
+                        "status": "declined", 
+                        "message": "Card declined", 
+                        "card": ccx,
+                        "errors": submission["errors"]
+                    }
+                else:
+                    return {
+                        "status": "unknown",
+                        "message": "Unexpected response format",
+                        "card": ccx,
+                        "debug": submission
+                    }
             
-            return {"status": "declined", "message": "Card declined", "card": ccx}
+            return {"status": "error", "message": "Invalid response format", "card": ccx, "debug": result}
 
     except httpx.ConnectError:
         return {"status": "error", "message": "Connection error", "card": ccx}
